@@ -1,757 +1,887 @@
--- RusCatScript Fast Auto Farm with Fly, Hide GUI & Jump Animation
--- Fast win detection with flying and R6 jump animation
+-- RusCatScript Ultimate Hub - Complete All-in-One
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+local Window = Rayfield:CreateWindow({
+    Name = "🧿 RusCatScript Ultimate v9.0",
+    LoadingTitle = "Complete All-in-One System",
+    LoadingSubtitle = "ESP + Auto Farm + Player Controls + VIP Tags",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "RusCatScriptComplete",
+        FileName = "CompleteConfig"
+    },
+    Discord = {
+        Enabled = true,
+        Invite = "sirius",
+        RememberJoins = true
+    },
+    KeySystem = false,
+})
 
--- GUI Creation
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "RusCatScriptGUI"
-ScreenGui.Parent = game:GetService("CoreGui")
+-- GamePass Configuration
+local GamePassID = 1585571770
+local VIP = {
+    HasVIP = false,
+    Price = 100,
+    GamePassId = GamePassID,
+    Tag = "Scripter VIP"
+}
 
--- Main Frame 400x200
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 400, 0, 200)
-MainFrame.Position = UDim2.new(0, 10, 0, 10)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
-MainFrame.Parent = ScreenGui
+-- Auto Farm Configuration
+local WinPositions = {
+    Win1 = Vector3.new(57.25, 241.75, 226.75),
+    Spawn = Vector3.new(0, 5, 0)
+}
 
--- Header
-local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 30)
-Header.Position = UDim2.new(0, 0, 0, 0)
-Header.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
-Header.BorderSizePixel = 0
-Header.Active = true
-Header.Draggable = true
-Header.Parent = MainFrame
+local FarmStats = {
+    TotalWins = 0,
+    IsFarming = false,
+    TargetWins = 10
+}
 
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -90, 1, 0)
-Title.Position = UDim2.new(0, 10, 0, 0)
-Title.BackgroundTransparency = 1
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Text = "RusCatScript FAST FARM"
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 14
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = Header
+-- Player Control Variables
+local PlayerControls = {
+    Speed = 16,
+    JumpPower = 50,
+    FlyEnabled = false,
+    VFlyEnabled = false,
+    FreeCamEnabled = false,
+    Noclip = false
+}
 
--- Control Buttons
-local HideButton = Instance.new("TextButton")
-HideButton.Size = UDim2.new(0, 30, 0, 30)
-HideButton.Position = UDim2.new(1, -60, 0, 0)
-HideButton.BackgroundColor3 = Color3.fromRGB(255, 180, 60)
-HideButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-HideButton.Text = "-"
-HideButton.Font = Enum.Font.GothamBold
-HideButton.TextSize = 16
-HideButton.Parent = Header
+-- ESP Configuration
+local ESPConfig = {
+    Enabled = false,
+    Boxes = true,
+    Names = true,
+    Distance = true,
+    Health = true,
+    ShowHead = true,
+    ShowHitbox = true,
+    ShowSegments = true,
+    Color = Color3.fromRGB(255, 0, 0)
+}
 
-local CloseButton = Instance.new("TextButton")
-CloseButton.Size = UDim2.new(0, 30, 0, 30)
-CloseButton.Position = UDim2.new(1, -30, 0, 0)
-CloseButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.Text = "X"
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextSize = 14
-CloseButton.Parent = Header
+local ESPObjects = {}
+local Connections = {}
 
--- Scrolling Frame
-local ScrollFrame = Instance.new("ScrollingFrame")
-ScrollFrame.Size = UDim2.new(1, 0, 1, -30)
-ScrollFrame.Position = UDim2.new(0, 0, 0, 30)
-ScrollFrame.BackgroundTransparency = 1
-ScrollFrame.ScrollBarThickness = 6
-ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 350)
-ScrollFrame.Parent = MainFrame
+-- ========== AUTO FARM WINS TAB ==========
+local FarmTab = Window:CreateTab("🎯 Auto Farm Wins", 1234567890)
 
--- Content
-local Content = Instance.new("Frame")
-Content.Size = UDim2.new(1, 0, 0, 350)
-Content.Position = UDim2.new(0, 0, 0, 0)
-Content.BackgroundTransparency = 1
-Content.Parent = ScrollFrame
+-- Position Configuration
+local PositionSection = FarmTab:CreateSection("Win Position Settings")
 
--- Status Label
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(1, -20, 0, 50)
-StatusLabel.Position = UDim2.new(0, 10, 0, 10)
-StatusLabel.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-StatusLabel.Text = "Status: Ready\nWins: 0\nPosition: Waiting..."
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextSize = 12
-StatusLabel.TextWrapped = true
-StatusLabel.Parent = Content
-
--- Win Counter
-local WinsLabel = Instance.new("TextLabel")
-WinsLabel.Size = UDim2.new(1, -20, 0, 20)
-WinsLabel.Position = UDim2.new(0, 10, 0, 70)
-WinsLabel.BackgroundTransparency = 1
-WinsLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
-WinsLabel.Text = "Total Wins: 0 | Session: 0"
-WinsLabel.Font = Enum.Font.GothamBold
-WinsLabel.TextSize = 12
-WinsLabel.TextXAlignment = Enum.TextXAlignment.Left
-WinsLabel.Parent = Content
-
--- Win Position Section
-local WinPosLabel = Instance.new("TextLabel")
-WinPosLabel.Size = UDim2.new(1, -20, 0, 20)
-WinPosLabel.Position = UDim2.new(0, 10, 0, 95)
-WinPosLabel.BackgroundTransparency = 1
-WinPosLabel.TextColor3 = Color3.fromRGB(200, 200, 255)
-WinPosLabel.Text = "Win Position:"
-WinPosLabel.Font = Enum.Font.Gotham
-WinPosLabel.TextSize = 12
-WinPosLabel.TextXAlignment = Enum.TextXAlignment.Left
-WinPosLabel.Parent = Content
-
-local XBox = Instance.new("TextBox")
-XBox.Size = UDim2.new(0.3, -10, 0, 25)
-XBox.Position = UDim2.new(0, 10, 0, 120)
-XBox.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-XBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-XBox.Text = "57.25"
-XBox.PlaceholderText = "X"
-XBox.Font = Enum.Font.Gotham
-XBox.TextSize = 12
-XBox.Parent = Content
-
-local YBox = Instance.new("TextBox")
-YBox.Size = UDim2.new(0.3, -10, 0, 25)
-YBox.Position = UDim2.new(0.33, 0, 0, 120)
-YBox.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-YBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-YBox.Text = "241.75"
-YBox.PlaceholderText = "Y"
-YBox.Font = Enum.Font.Gotham
-YBox.TextSize = 12
-YBox.Parent = Content
-
-local ZBox = Instance.new("TextBox")
-ZBox.Size = UDim2.new(0.3, -10, 0, 25)
-ZBox.Position = UDim2.new(0.66, 0, 0, 120)
-ZBox.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-ZBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-ZBox.Text = "226.75"
-ZBox.PlaceholderText = "Z"
-ZBox.Font = Enum.Font.Gotham
-ZBox.TextSize = 12
-ZBox.Parent = Content
-
--- Buttons
-local StartFarmButton = Instance.new("TextButton")
-StartFarmButton.Size = UDim2.new(1, -20, 0, 30)
-StartFarmButton.Position = UDim2.new(0, 10, 0, 155)
-StartFarmButton.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
-StartFarmButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-StartFarmButton.Text = "🚀 START FAST FARM"
-StartFarmButton.Font = Enum.Font.GothamBold
-StartFarmButton.TextSize = 12
-StartFarmButton.Parent = Content
-
-local StopFarmButton = Instance.new("TextButton")
-StopFarmButton.Size = UDim2.new(1, -20, 0, 30)
-StopFarmButton.Position = UDim2.new(0, 10, 0, 190)
-StopFarmButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-StopFarmButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-StopFarmButton.Text = "🛑 STOP FARM"
-StopFarmButton.Font = Enum.Font.GothamBold
-StopFarmButton.TextSize = 12
-StopFarmButton.Parent = Content
-
-local FindWinButton = Instance.new("TextButton")
-FindWinButton.Size = UDim2.new(0.48, -5, 0, 25)
-FindWinButton.Position = UDim2.new(0, 10, 0, 225)
-FindWinButton.BackgroundColor3 = Color3.fromRGB(80, 80, 180)
-FindWinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-FindWinButton.Text = "🔍 FIND WIN PART"
-FindWinButton.Font = Enum.Font.Gotham
-FindWinButton.TextSize = 11
-FindWinButton.Parent = Content
-
-local GetPosButton = Instance.new("TextButton")
-GetPosButton.Size = UDim2.new(0.48, -5, 0, 25)
-GetPosButton.Position = UDim2.new(0.52, 0, 0, 225)
-GetPosButton.BackgroundColor3 = Color3.fromRGB(80, 120, 80)
-GetPosButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-GetPosButton.Text = "📍 GET POSITION"
-GetPosButton.Font = Enum.Font.Gotham
-GetPosButton.TextSize = 11
-GetPosButton.Parent = Content
-
-local ToggleFlyButton = Instance.new("TextButton")
-ToggleFlyButton.Size = UDim2.new(0.48, -5, 0, 25)
-ToggleFlyButton.Position = UDim2.new(0, 10, 0, 255)
-ToggleFlyButton.BackgroundColor3 = Color3.fromRGB(200, 100, 50)
-ToggleFlyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleFlyButton.Text = "🦅 TOGGLE FLY"
-ToggleFlyButton.Font = Enum.Font.Gotham
-ToggleFlyButton.TextSize = 11
-ToggleFlyButton.Parent = Content
-
-local TeleportButton = Instance.new("TextButton")
-TeleportButton.Size = UDim2.new(0.48, -5, 0, 25)
-TeleportButton.Position = UDim2.new(0.52, 0, 0, 255)
-TeleportButton.BackgroundColor3 = Color3.fromRGB(100, 100, 200)
-TeleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-TeleportButton.Text = "✨ TELEPORT"
-TeleportButton.Font = Enum.Font.Gotham
-TeleportButton.TextSize = 11
-TeleportButton.Parent = Content
-
-local StopAllButton = Instance.new("TextButton")
-StopAllButton.Size = UDim2.new(1, -20, 0, 25)
-StopAllButton.Position = UDim2.new(0, 10, 0, 285)
-StopAllButton.BackgroundColor3 = Color3.fromRGB(150, 60, 60)
-StopAllButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-StopAllButton.Text = "🛑 STOP ALL"
-StopAllButton.Font = Enum.Font.Gotham
-StopAllButton.TextSize = 11
-StopAllButton.Parent = Content
-
--- Mini GUI for when hidden
-local MiniFrame = Instance.new("Frame")
-MiniFrame.Size = UDim2.new(0, 150, 0, 40)
-MiniFrame.Position = UDim2.new(0, 10, 0, 10)
-MiniFrame.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
-MiniFrame.BorderSizePixel = 0
-MiniFrame.Visible = false
-MiniFrame.Active = true
-MiniFrame.Draggable = true
-MiniFrame.Parent = ScreenGui
-
-local MiniTitle = Instance.new("TextLabel")
-MiniTitle.Size = UDim2.new(1, -60, 1, 0)
-MiniTitle.Position = UDim2.new(0, 10, 0, 0)
-MiniTitle.BackgroundTransparency = 1
-MiniTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-MiniTitle.Text = "RusCatScript"
-MiniTitle.Font = Enum.Font.GothamBold
-MiniTitle.TextSize = 12
-MiniTitle.TextXAlignment = Enum.TextXAlignment.Left
-MiniTitle.Parent = MiniFrame
-
-local MiniShowButton = Instance.new("TextButton")
-MiniShowButton.Size = UDim2.new(0, 30, 0, 40)
-MiniShowButton.Position = UDim2.new(1, -30, 0, 0)
-MiniShowButton.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
-MiniShowButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-MiniShowButton.Text = "+"
-MiniShowButton.Font = Enum.Font.GothamBold
-MiniShowButton.TextSize = 16
-MiniShowButton.Parent = MiniFrame
-
-local MiniCloseButton = Instance.new("TextButton")
-MiniCloseButton.Size = UDim2.new(0, 30, 0, 40)
-MiniCloseButton.Position = UDim2.new(1, -60, 0, 0)
-MiniCloseButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-MiniCloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-MiniCloseButton.Text = "X"
-MiniCloseButton.Font = Enum.Font.GothamBold
-MiniShowButton.TextSize = 14
-MiniCloseButton.Parent = MiniFrame
-
--- Close button functionality
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
-
-MiniCloseButton.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
-end)
-
--- Hide/Show functionality
-local IsGUIVisible = true
-
-HideButton.MouseButton1Click:Connect(function()
-    IsGUIVisible = false
-    MainFrame.Visible = false
-    MiniFrame.Visible = true
-end)
-
-MiniShowButton.MouseButton1Click:Connect(function()
-    IsGUIVisible = true
-    MainFrame.Visible = true
-    MiniFrame.Visible = false
-end)
-
--- Auto Farm Variables
-local IsFarming = false
-local IsFlying = false
-local IsJumping = false
-local FarmConnection = nil
-local FlyConnection = nil
-local JumpConnection = nil
-local TotalWins = 0
-local SessionWins = 0
-
--- Fly System Variables
-local BGV = nil
-local BV = nil
-local FlySpeed = 100
-
--- Function to create R6 Jump Animation
-function CreateJumpAnimation()
-    if not Character then return nil end
-    
-    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
-    if not Humanoid then return nil end
-    
-    -- Create animation track for jumping
-    local Animation = Instance.new("Animation")
-    Animation.AnimationId = "rbxassetid://180436148" -- Default jump animation
-    
-    local AnimationTrack = Humanoid:LoadAnimation(Animation)
-    return AnimationTrack
-end
-
--- Function to start jump animation loop
-function StartJumpAnimation()
-    if IsJumping then return end
-    
-    IsJumping = true
-    local JumpAnimation = CreateJumpAnimation()
-    
-    if not JumpAnimation then 
-        IsJumping = false
-        return 
-    end
-    
-    JumpConnection = RunService.Heartbeat:Connect(function()
-        if not IsJumping or not IsFarming then
-            JumpConnection:Disconnect()
-            IsJumping = false
-            return
+local WinX = FarmTab:CreateInput({
+    Name = "Win Position X",
+    PlaceholderText = "57.25",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        if tonumber(Text) then
+            WinPositions.Win1 = Vector3.new(tonumber(Text), WinPositions.Win1.Y, WinPositions.Win1.Z)
         end
-        
-        -- Play jump animation every 1 second
-        if JumpAnimation then
-            JumpAnimation:Play()
-            wait(0.5)
-            if JumpAnimation then
-                JumpAnimation:Stop()
-            end
-            wait(0.5)
-        end
-    end)
-end
+    end,
+})
 
--- Function to stop jump animation
-function StopJumpAnimation()
-    IsJumping = false
-    if JumpConnection then
-        JumpConnection:Disconnect()
-        JumpConnection = nil
-    end
-end
+local WinY = FarmTab:CreateInput({
+    Name = "Win Position Y",
+    PlaceholderText = "241.75",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        if tonumber(Text) then
+            WinPositions.Win1 = Vector3.new(WinPositions.Win1.X, tonumber(Text), WinPositions.Win1.Z)
+        end
+    end,
+})
 
--- Function to enable Fly
-function EnableFly()
-    if IsFlying then return end
-    
-    repeat wait() until Character and HumanoidRootPart and Character:FindFirstChildOfClass("Humanoid")
-    
-    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
-    Humanoid.PlatformStand = true
-    
-    BGV = Instance.new("BodyGyro")
-    BV = Instance.new("BodyVelocity")
-    
-    BGV.Parent = HumanoidRootPart
-    BV.Parent = HumanoidRootPart
-    
-    BGV.MaxTorque = Vector3.new(0, 0, 0)
-    BGV.P = 10000
-    BGV.D = 1000
-    
-    BV.MaxForce = Vector3.new(40000, 40000, 40000)
-    BV.Velocity = Vector3.new(0, 0, 0)
-    
-    IsFlying = true
-    
-    FlyConnection = RunService.Heartbeat:Connect(function()
-        if not IsFlying then return end
-        
-        if not Character or not HumanoidRootPart then
-            DisableFly()
-            return
+local WinZ = FarmTab:CreateInput({
+    Name = "Win Position Z",
+    PlaceholderText = "226.75",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        if tonumber(Text) then
+            WinPositions.Win1 = Vector3.new(WinPositions.Win1.X, WinPositions.Win1.Y, tonumber(Text))
         end
-        
-        BGV.CFrame = workspace.CurrentCamera.CoordinateFrame
-        
-        local moveDirection = Vector3.new(0, 0, 0)
-        
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-            moveDirection = moveDirection + workspace.CurrentCamera.CFrame.LookVector
+    end,
+})
+
+local SpawnInput = FarmTab:CreateInput({
+    Name = "Spawn Position (X,Y,Z)",
+    PlaceholderText = "0,5,0",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        local x, y, z = Text:match("([%d%-%.]+),([%d%-%.]+),([%d%-%.]+)")
+        if x and y and z then
+            WinPositions.Spawn = Vector3.new(tonumber(x), tonumber(y), tonumber(z))
         end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-            moveDirection = moveDirection - workspace.CurrentCamera.CFrame.LookVector
+    end,
+})
+
+-- Farm Control Section
+local FarmSection = FarmTab:CreateSection("Farm Control")
+
+local WinsTarget = FarmTab:CreateInput({
+    Name = "Target Wins Count (1-100000)",
+    PlaceholderText = "10",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        local target = tonumber(Text)
+        if target and target >= 1 and target <= 100000 then
+            FarmStats.TargetWins = target
+            UpdateFarmDisplay()
         end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-            moveDirection = moveDirection - workspace.CurrentCamera.CFrame.RightVector
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-            moveDirection = moveDirection + workspace.CurrentCamera.CFrame.RightVector
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-            moveDirection = moveDirection + Vector3.new(0, 1, 0)
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-            moveDirection = moveDirection - Vector3.new(0, 1, 0)
-        end
-        
-        if moveDirection.Magnitude > 0 then
-            BV.Velocity = moveDirection.Unit * FlySpeed
+    end,
+})
+
+local DelayInput = FarmTab:CreateInput({
+    Name = "Farm Delay (Seconds)",
+    PlaceholderText = "1",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(Text)
+        _G.FarmDelay = tonumber(Text) or 1
+    end,
+})
+
+_G.FarmDelay = 1
+
+-- Main Farm Toggle
+local AutoFarmToggle = FarmTab:CreateToggle({
+    Name = "🔄 Start Auto Win Farm",
+    CurrentValue = false,
+    Callback = function(Value)
+        if Value then
+            StartWinFarm()
         else
-            BV.Velocity = Vector3.new(0, 0, 0)
+            StopWinFarm()
         end
-    end)
-end
+    end,
+})
 
--- Function to disable Fly
-function DisableFly()
-    IsFlying = false
+-- Farm Statistics
+local StatsSection = FarmTab:CreateSection("Farm Statistics")
+
+local WinsLabel = FarmTab:CreateLabel("Total Wins: 0")
+local TargetLabel = FarmTab:CreateLabel("Target Wins: 10")
+local StatusLabel = FarmTab:CreateLabel("Status: Ready")
+
+function UpdateFarmDisplay()
+    WinsLabel:Set("Total Wins: " .. FarmStats.TotalWins)
+    TargetLabel:Set("Target Wins: " .. FarmStats.TargetWins)
     
-    if BGV then BGV:Destroy() end
-    if BV then BV:Destroy() end
-    
-    if Character and Character:FindFirstChildOfClass("Humanoid") then
-        Character:FindFirstChildOfClass("Humanoid").PlatformStand = false
+    if FarmStats.IsFarming then
+        StatusLabel:Set("Status: Farming... (" .. FarmStats.TotalWins .. "/" .. FarmStats.TargetWins .. ")")
+    else
+        StatusLabel:Set("Status: Ready")
     end
-    
-    if FlyConnection then
-        FlyConnection:Disconnect()
-        FlyConnection = nil
-    end
 end
 
--- Function to fly to position FAST
-function FlyToPosition(x, y, z)
-    if not IsFlying then
-        EnableFly()
-    end
-    
-    local target = CFrame.new(x, y, z)
-    HumanoidRootPart.CFrame = target
-end
-
--- Function to teleport to coordinates
-function TeleportToCoordinates(x, y, z)
-    local success, error = pcall(function()
-        HumanoidRootPart.CFrame = CFrame.new(x, y, z)
-    end)
-    return success
-end
-
--- Function to get current position
-function GetCurrentPosition()
-    local pos = HumanoidRootPart.Position
-    return math.floor(pos.X * 100)/100, math.floor(pos.Y * 100)/100, math.floor(pos.Z * 100)/100
-end
-
--- FAST Win Detection Function
-function CheckForWins()
-    -- Method 1: Check leaderboard
-    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
-    if leaderstats then
-        local wins = leaderstats:FindFirstChild("Wins") or leaderstats:FindFirstChild("wins")
-        if wins and wins.Value > TotalWins then
-            local newWins = wins.Value - TotalWins
-            TotalWins = wins.Value
-            SessionWins = SessionWins + newWins
-            UpdateWinDisplay()
+-- Farm Functions
+function TeleportToPosition(position)
+    local player = game.Players.LocalPlayer
+    if player and player.Character then
+        local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            humanoidRootPart.CFrame = CFrame.new(position)
             return true
         end
     end
-    
     return false
 end
 
--- Update win display
-function UpdateWinDisplay()
-    WinsLabel.Text = "Total Wins: " .. TotalWins .. " | Session: " .. SessionWins
-end
-
--- Function to find win parts FAST
-function FindWinPart()
-    StatusLabel.Text = "🔍 Searching for win parts..."
+function StartWinFarm()
+    FarmStats.IsFarming = true
     
-    local winParts = {}
+    Rayfield:Notify({
+        Title = "🚀 Auto Farm Started",
+        Content = string.format("Target: %d wins | Delay: %ds", FarmStats.TargetWins, _G.FarmDelay),
+        Duration = 5.0,
+        Image = 1234567890,
+    })
     
-    -- Check common win part locations first
-    local commonLocations = {
-        "Finish", "Win", "End", "Victory", "Goal",
-        "Portal", "Exit", "Complete", "Final"
-    }
-    
-    for _, location in pairs(commonLocations) do
-        local part = workspace:FindFirstChild(location)
-        if part and part:IsA("Part") then
-            table.insert(winParts, part)
-        end
-    end
-    
-    -- Search all parts if not found
-    if #winParts == 0 then
-        local allObjects = workspace:GetDescendants()
-        for _, obj in pairs(allObjects) do
-            if obj:IsA("Part") then
-                local objName = obj.Name:lower()
-                if objName:find("win") or objName:find("finish") or objName:find("end") or objName:find("victory") or objName:find("goal") then
-                    table.insert(winParts, obj)
-                end
-            end
-        end
-    end
-    
-    if #winParts > 0 then
-        local firstWin = winParts[1]
-        XBox.Text = tostring(math.floor(firstWin.Position.X * 100)/100)
-        YBox.Text = tostring(math.floor(firstWin.Position.Y * 100)/100)
-        ZBox.Text = tostring(math.floor(firstWin.Position.Z * 100)/100)
-        StatusLabel.Text = "✅ Found win part! Position updated."
-    else
-        StatusLabel.Text = "❌ No win parts found. Set position manually."
-    end
-    
-    return winParts
-end
-
--- FAST Auto Farm function
-function AutoFarm()
-    if not IsFarming then return end
-    
-    -- Enable fly for fast movement
-    if not IsFlying then
-        EnableFly()
-    end
-    
-    -- Start jump animation if not already started
-    if not IsJumping then
-        StartJumpAnimation()
-    end
-    
-    -- Get win position from text boxes
-    local winX = tonumber(XBox.Text) or 57.25
-    local winY = tonumber(YBox.Text) or 241.75
-    local winZ = tonumber(ZBox.Text) or 226.75
-    
-    -- FAST: Fly to win position
-    FlyToPosition(winX, winY, winZ)
-    StatusLabel.Text = "🎯 Flying to win position..."
-    wait(0.1)
-    
-    -- FAST: Look for enemies and slap them
-    local enemies = workspace:GetChildren()
-    local slapped = false
-    
-    for _, enemy in pairs(enemies) do
-        if not IsFarming then break end
-        
-        if enemy:FindFirstChild("Humanoid") and enemy:FindFirstChild("HumanoidRootPart") then
-            local enemyRoot = enemy.HumanoidRootPart
-            
-            -- FAST: Fly to enemy
-            FlyToPosition(enemyRoot.Position.X, enemyRoot.Position.Y + 3, enemyRoot.Position.Z)
-            StatusLabel.Text = "👊 Flying to enemy..."
-            wait(0.05)
-            
-            -- FAST: Try to slap the enemy
-            local args = {
-                [1] = enemy,
-                [2] = enemy.HumanoidRootPart,
-                [3] = {
-                    ["hit"] = enemy.HumanoidRootPart,
-                    ["damage"] = 99999
-                }
-            }
-            
-            -- Try multiple remote events quickly
-            local remotes = {
-                "Slap", "Damage", "Hit", "Attack", 
-                "SlapEvent", "SlapPlayer", "ReplicateSlap",
-                "TouchInterest", "ClickDetector"
-            }
-            
-            for _, remoteName in pairs(remotes) do
-                pcall(function()
-                    for _, service in pairs({game:GetService("ReplicatedStorage"), game:GetService("Workspace")}) do
-                        local remote = service:FindFirstChild(remoteName)
-                        if remote then
-                            if remote:IsA("RemoteEvent") then
-                                remote:FireServer(unpack(args))
-                            elseif remote:IsA("BindableEvent") then
-                                remote:Fire(unpack(args))
-                            end
-                            slapped = true
-                        end
+    -- Farm coroutine
+    coroutine.wrap(function()
+        while FarmStats.IsFarming and FarmStats.TotalWins < FarmStats.TargetWins do
+            local success = pcall(function()
+                -- Teleport to win position
+                if TeleportToPosition(WinPositions.Win1) then
+                    task.wait(_G.FarmDelay)
+                    
+                    -- Teleport back to spawn
+                    TeleportToPosition(WinPositions.Spawn)
+                    task.wait(0.5)
+                    
+                    -- Increment win counter
+                    FarmStats.TotalWins += 1
+                    
+                    -- Update UI
+                    UpdateFarmDisplay()
+                    
+                    -- Progress notifications
+                    if _G.WinNotifications and FarmStats.TotalWins % _G.ProgressInterval == 0 then
+                        Rayfield:Notify({
+                            Title = "📈 Farm Progress",
+                            Content = string.format("Reached %d/%d wins!", FarmStats.TotalWins, FarmStats.TargetWins),
+                            Duration = 3.0,
+                            Image = 1234567890,
+                        })
                     end
-                end)
+                    
+                    -- Check if target reached
+                    if FarmStats.TotalWins >= FarmStats.TargetWins then
+                        StopWinFarm()
+                        Rayfield:Notify({
+                            Title = "🎉 Target Reached!",
+                            Content = string.format("Completed %d wins!", FarmStats.TotalWins),
+                            Duration = 8.0,
+                            Image = 1234567890,
+                        })
+                    end
+                end
+            end)
+            
+            if not success then
+                warn("Farm iteration failed, continuing...")
             end
             
-            if slapped then
-                StatusLabel.Text = "💥 Slapped enemy! Checking for win..."
-                -- Immediately check for win after slap
-                CheckForWins()
-            end
-            
-            wait(0.05)
+            task.wait(_G.FarmDelay)
         end
-    end
-    
-    -- FAST: Return to win position
-    FlyToPosition(winX, winY, winZ)
-    wait(0.1)
-    
-    -- FAST: Look for finish zones and trigger them
-    local finishObjects = workspace:GetDescendants()
-    
-    for _, obj in pairs(finishObjects) do
-        if not IsFarming then break end
-        
-        local objName = obj.Name:lower()
-        if objName:find("finish") or objName:find("end") or objName:find("complete") or objName:find("win") then
-            if obj:IsA("Part") then
-                -- FAST: Fly to finish object
-                FlyToPosition(obj.Position.X, obj.Position.Y, obj.Position.Z)
-                StatusLabel.Text = "🏁 Flying to finish object..."
-                wait(0.05)
-                
-                -- FAST: Trigger touch events
-                firetouchinterest(HumanoidRootPart, obj, 0)
-                firetouchinterest(HumanoidRootPart, obj, 1)
-                
-                StatusLabel.Text = "✅ Finish object triggered! Checking for win..."
-                -- Immediately check for win
-                CheckForWins()
-                wait(0.05)
-            end
+    end)()
+end
+
+function StopWinFarm()
+    FarmStats.IsFarming = false
+    UpdateFarmDisplay()
+    Rayfield:Notify({
+        Title = "⏹️ Farm Stopped",
+        Content = string.format("Total Wins: %d", FarmStats.TotalWins),
+        Duration = 5.0,
+        Image = 1234567890,
+    })
+end
+
+-- Quick Farm Actions
+local ActionsSection = FarmTab:CreateSection("Quick Actions")
+
+local TestWin = FarmTab:CreateButton({
+    Name = "🧪 Test Win Position",
+    Callback = function()
+        if TeleportToPosition(WinPositions.Win1) then
+            Rayfield:Notify({
+                Title = "✅ Test Successful",
+                Content = "Teleported to win position!",
+                Duration = 4.0,
+                Image = 1234567890,
+            })
+        end
+    end,
+})
+
+local ResetCounter = FarmTab:CreateButton({
+    Name = "🔄 Reset Win Counter",
+    Callback = function()
+        FarmStats.TotalWins = 0
+        UpdateFarmDisplay()
+        Rayfield:Notify({
+            Title = "🔄 Counter Reset",
+            Content = "Win counter set to 0",
+            Duration = 3.0,
+            Image = 1234567890,
+        })
+    end,
+})
+
+-- ========== LOCAL PLAYER CONTROLS TAB ==========
+local PlayerTab = Window:CreateTab("🎮 Local Player", 1234567890)
+
+-- Speed Section
+local SpeedSection = PlayerTab:CreateSection("Movement Controls")
+
+local SpeedSlider = PlayerTab:CreateSlider({
+    Name = "🚀 WalkSpeed",
+    Range = {16, 200},
+    Increment = 1,
+    Suffix = "studs/s",
+    CurrentValue = 16,
+    Flag = "Speed",
+    Callback = function(Value)
+        PlayerControls.Speed = Value
+        UpdatePlayerSpeed()
+    end,
+})
+
+local JumpSlider = PlayerTab:CreateSlider({
+    Name = "🦘 JumpPower",
+    Range = {50, 200},
+    Increment = 1,
+    Suffix = "power",
+    CurrentValue = 50,
+    Flag = "JumpPower",
+    Callback = function(Value)
+        PlayerControls.JumpPower = Value
+        UpdatePlayerJump()
+    end,
+})
+
+-- Fly System
+local FlySection = PlayerTab:CreateSection("Flight Controls")
+
+local FlyToggle = PlayerTab:CreateToggle({
+    Name = "✈️ Enable Fly",
+    CurrentValue = false,
+    Callback = function(Value)
+        if Value then
+            EnableFly()
+        else
+            DisableFly()
+        end
+    end,
+})
+
+local FlySpeed = PlayerTab:CreateSlider({
+    Name = "Fly Speed",
+    Range = {1, 100},
+    Increment = 1,
+    Suffix = "studs/s",
+    CurrentValue = 20,
+    Flag = "FlySpeed",
+    Callback = function(Value)
+        _G.FLYSPEED = Value
+    end,
+})
+
+-- Movement Functions
+function UpdatePlayerSpeed()
+    local player = game.Players.LocalPlayer
+    if player and player.Character then
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = PlayerControls.Speed
         end
     end
 end
 
--- Main farm function
-function StartFarm()
-    if IsFarming then return end
-    
-    IsFarming = true
-    StatusLabel.Text = "🚀 FAST FARM STARTED!\nFlying to targets + Jump Animation..."
-    
-    -- Start jump animation when farming begins
-    StartJumpAnimation()
-    
-    FarmConnection = RunService.Heartbeat:Connect(function()
-        if not IsFarming then
-            FarmConnection:Disconnect()
-            return
+function UpdatePlayerJump()
+    local player = game.Players.LocalPlayer
+    if player and player.Character then
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.JumpPower = PlayerControls.JumpPower
         end
-        
-        -- Execute FAST farming routine
-        AutoFarm()
-        
-        -- Check for wins continuously
-        CheckForWins()
+    end
+end
+
+-- Fly System
+function EnableFly()
+    PlayerControls.FlyEnabled = true
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoid = character:WaitForChild("Humanoid")
+    
+    _G.FLYSPEED = _G.FLYSPEED or 20
+    
+    local bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.Name = "RusCatFly"
+    bodyVelocity.MaxForce = Vector3.new(40000, 40000, 40000)
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.Parent = character:FindFirstChild("HumanoidRootPart")
+    
+    _G.FlyConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        if PlayerControls.FlyEnabled and character and character:FindFirstChild("HumanoidRootPart") then
+            local root = character.HumanoidRootPart
+            local camera = workspace.CurrentCamera
+            
+            local flyDirection = Vector3.new(0, 0, 0)
+            
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
+                flyDirection = flyDirection + camera.CFrame.LookVector
+            end
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then
+                flyDirection = flyDirection - camera.CFrame.LookVector
+            end
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then
+                flyDirection = flyDirection - camera.CFrame.RightVector
+            end
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then
+                flyDirection = flyDirection + camera.CFrame.RightVector
+            end
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then
+                flyDirection = flyDirection + Vector3.new(0, 1, 0)
+            end
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftShift) then
+                flyDirection = flyDirection - Vector3.new(0, 1, 0)
+            end
+            
+            if flyDirection.Magnitude > 0 then
+                flyDirection = flyDirection.Unit * _G.FLYSPEED
+            end
+            
+            bodyVelocity.Velocity = flyDirection
+            humanoid.PlatformStand = flyDirection.Magnitude > 0
+        end
     end)
 end
 
-function StopFarm()
-    IsFarming = false
-    StopJumpAnimation()
-    StatusLabel.Text = "🛑 Farming Stopped\nTotal Wins: " .. TotalWins
+function DisableFly()
+    PlayerControls.FlyEnabled = false
+    if _G.FlyConnection then
+        _G.FlyConnection:Disconnect()
+    end
     
-    if FarmConnection then
-        FarmConnection:Disconnect()
-        FarmConnection = nil
+    local player = game.Players.LocalPlayer
+    if player and player.Character then
+        local flyPart = player.Character:FindFirstChild("RusCatFly")
+        if flyPart then
+            flyPart:Destroy()
+        end
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.PlatformStand = false
+        end
     end
 end
 
-function StopAll()
-    IsFarming = false
-    DisableFly()
-    StopJumpAnimation()
-    StatusLabel.Text = "🛑 All Functions Stopped\nWins: " .. TotalWins
+-- ========== FREE ESP TAB ==========
+local ESPTab = Window:CreateTab("👁️ Free ESP", 1234567890)
+
+local ESPToggleSection = ESPTab:CreateSection("ESP Control")
+
+local ESPToggle = ESPTab:CreateToggle({
+    Name = "👁️ Enable Enemy ESP (FREE)",
+    CurrentValue = false,
+    Callback = function(Value)
+        ESPConfig.Enabled = Value
+        if Value then
+            StartESP()
+        else
+            StopESP()
+        end
+    end,
+})
+
+-- ESP Functions
+function CreateESP(object)
+    if not object or not object:IsA("BasePart") then return end
     
-    if FarmConnection then 
-        FarmConnection:Disconnect() 
-        FarmConnection = nil 
+    local partName = object.Name:lower()
+    local shouldHighlight = false
+    
+    if ESPConfig.ShowHead and partName:find("head") then
+        shouldHighlight = true
+    elseif ESPConfig.ShowHitbox and partName:find("hitbox") then
+        shouldHighlight = true
+    elseif ESPConfig.ShowSegments and partName:find("segment") then
+        shouldHighlight = true
     end
-end
-
--- Button events
-StartFarmButton.MouseButton1Click:Connect(StartFarm)
-StopFarmButton.MouseButton1Click:Connect(StopFarm)
-StopAllButton.MouseButton1Click:Connect(StopAll)
-
-FindWinButton.MouseButton1Click:Connect(function()
-    FindWinPart()
-end)
-
-GetPosButton.MouseButton1Click:Connect(function()
-    local x, y, z = GetCurrentPosition()
-    XBox.Text = tostring(x)
-    YBox.Text = tostring(y)
-    ZBox.Text = tostring(z)
-    StatusLabel.Text = string.format("📍 Position Updated: %.2f, %.2f, %.2f", x, y, z)
-end)
-
-ToggleFlyButton.MouseButton1Click:Connect(function()
-    if IsFlying then
-        DisableFly()
-        StatusLabel.Text = "🦅 Fly Disabled"
-    else
-        EnableFly()
-        StatusLabel.Text = "🦅 Fly Enabled - Use WASD+Space+Shift"
-    end
-end)
-
-TeleportButton.MouseButton1Click:Connect(function()
-    local x = tonumber(XBox.Text) or 57.25
-    local y = tonumber(YBox.Text) or 241.75
-    local z = tonumber(ZBox.Text) or 226.75
     
-    FlyToPosition(x, y, z)
-    StatusLabel.Text = string.format("✨ Flew to: %.2f, %.2f, %.2f", x, y, z)
-end)
-
--- Anti-AFK
-local VirtualUser = game:GetService("VirtualUser")
-game:GetService("Players").LocalPlayer.Idled:Connect(function()
-    VirtualUser:CaptureController()
-    VirtualUser:ClickButton2(Vector2.new())
-end)
-
--- Update position display and check wins continuously
-RunService.Heartbeat:Connect(function()
-    local x, y, z = GetCurrentPosition()
-    local farmStatus = IsFarming and "🚀 FARMING" or "🟢 READY"
-    local flyStatus = IsFlying and "🦅 FLYING" or "🔴 NO FLY"
-    local jumpStatus = IsJumping and "🕺 JUMPING" or "🔴 NO JUMP"
+    if not shouldHighlight then return end
+    if ESPObjects[object] then return end
     
-    StatusLabel.Text = string.format("%s | %s | %s\n🎯 Pos: %.1f, %.1f, %.1f\n🏆 Wins: %d", 
-        farmStatus, flyStatus, jumpStatus, x, y, z, TotalWins)
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "RusCatESP"
+    highlight.Adornee = object
+    highlight.FillColor = ESPConfig.Color
+    highlight.OutlineColor = Color3.new(1, 1, 1)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = object
+    
+    if object:FindFirstChildWhichIsA("BillboardGui") == nil then
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "RusCatInfo"
+        billboard.Adornee = object
+        billboard.Size = UDim2.new(0, 200, 0, 100)
+        billboard.StudsOffset = Vector3.new(0, 3, 0)
+        billboard.AlwaysOnTop = true
+        billboard.MaxDistance = 500
+        billboard.Parent = object
         
-    -- Continuous win checking
-    if IsFarming then
-        CheckForWins()
+        local label = Instance.new("TextLabel")
+        label.Name = "InfoLabel"
+        label.BackgroundTransparency = 1
+        label.TextSize = 14
+        label.TextColor3 = ESPConfig.Color
+        label.TextStrokeTransparency = 0
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.Font = Enum.Font.GothamBold
+        label.Parent = billboard
+        
+        UpdateESPInfo(object)
+    end
+    
+    ESPObjects[object] = {
+        Highlight = highlight,
+        Billboard = object:FindFirstChild("RusCatInfo")
+    }
+end
+
+function UpdateESPInfo(object)
+    if not ESPObjects[object] then return end
+    
+    local billboard = object:FindFirstChild("RusCatInfo")
+    if not billboard then return end
+    
+    local label = billboard:FindFirstChild("InfoLabel")
+    if not label then return end
+    
+    local infoText = ""
+    
+    if ESPConfig.Names then
+        infoText = infoText .. object.Name .. "\n"
+    end
+    
+    if ESPConfig.Distance then
+        local player = game.Players.LocalPlayer
+        if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local distance = (object.Position - player.Character.HumanoidRootPart.Position).Magnitude
+            infoText = infoText .. string.format("Dist: %.1f\n", distance)
+        end
+    end
+    
+    if ESPConfig.Health then
+        local model = object:FindFirstAncestorOfClass("Model")
+        if model then
+            local humanoid = model:FindFirstChildWhichIsA("Humanoid")
+            if humanoid then
+                infoText = infoText .. string.format("HP: %d/%d", humanoid.Health, humanoid.MaxHealth)
+            end
+        end
+    end
+    
+    label.Text = infoText
+    label.TextColor3 = ESPConfig.Color
+end
+
+function RemoveESP(object)
+    if ESPObjects[object] then
+        if ESPObjects[object].Highlight then
+            ESPObjects[object].Highlight:Destroy()
+        end
+        if ESPObjects[object].Billboard then
+            ESPObjects[object].Billboard:Destroy()
+        end
+        ESPObjects[object] = nil
+    end
+end
+
+function UpdateAllESP()
+    for object, espData in pairs(ESPObjects) do
+        if object and object.Parent then
+            if espData.Highlight then
+                espData.Highlight.FillColor = ESPConfig.Color
+                espData.Highlight.Enabled = ESPConfig.Boxes
+            end
+            if espData.Billboard then
+                espData.Billboard.Enabled = ESPConfig.Names or ESPConfig.Distance or ESPConfig.Health
+                UpdateESPInfo(object)
+            end
+        else
+            RemoveESP(object)
+        end
+    end
+end
+
+function ScanForEnemies()
+    for _, object in pairs(workspace:GetDescendants()) do
+        if object:IsA("BasePart") then
+            local partName = object.Name:lower()
+            if (ESPConfig.ShowHead and partName:find("head")) or
+               (ESPConfig.ShowHitbox and partName:find("hitbox")) or
+               (ESPConfig.ShowSegments and partName:find("segment")) then
+                CreateESP(object)
+            end
+        end
+    end
+end
+
+function StartESP()
+    StopESP()
+    ScanForEnemies()
+    
+    table.insert(Connections, workspace.DescendantAdded:Connect(function(object)
+        if ESPConfig.Enabled and object:IsA("BasePart") then
+            task.wait(0.1)
+            local partName = object.Name:lower()
+            if (ESPConfig.ShowHead and partName:find("head")) or
+               (ESPConfig.ShowHitbox and partName:find("hitbox")) or
+               (ESPConfig.ShowSegments and partName:find("segment")) then
+                CreateESP(object)
+            end
+        end
+    end))
+    
+    table.insert(Connections, workspace.DescendantRemoving:Connect(function(object)
+        if ESPObjects[object] then
+            RemoveESP(object)
+        end
+    end))
+    
+    table.insert(Connections, game:GetService("RunService").Heartbeat:Connect(function()
+        if ESPConfig.Enabled then
+            for object in pairs(ESPObjects) do
+                if object and object.Parent then
+                    UpdateESPInfo(object)
+                else
+                    RemoveESP(object)
+                end
+            end
+        end
+    end))
+    
+    Rayfield:Notify({
+        Title = "👁️ ESP Activated",
+        Content = "Enemy ESP system is now active!",
+        Duration = 5.0,
+        Image = 1234567890,
+    })
+end
+
+function StopESP()
+    for _, connection in pairs(Connections) do
+        connection:Disconnect()
+    end
+    Connections = {}
+    
+    for object in pairs(ESPObjects) do
+        RemoveESP(object)
+    end
+    ESPObjects = {}
+    
+    Rayfield:Notify({
+        Title = "👁️ ESP Deactivated",
+        Content = "Enemy ESP system stopped!",
+        Duration = 5.0,
+        Image = 1234567890,
+    })
+end
+
+-- ========== VIP STORE & TAG SYSTEM ==========
+local StoreTab = Window:CreateTab("👑 VIP Store", 1234567890)
+
+local VIPSection = StoreTab:CreateSection("GamePass VIP System")
+
+StoreTab:CreateParagraph({
+    Title = "VIP Benefits",
+    Content = "🆓 FREE: ESP, Speed, Jump Power, Fly\n👑 VIP: Auto Farm, VFly, FreeCam, NoClip + 'Scripter VIP' Tag!"
+})
+
+local VIPPriceLabel = StoreTab:CreateLabel("GamePass ID: " .. VIP.GamePassId)
+local VIPStatus = StoreTab:CreateLabel("Status: Checking VIP...")
+local VIPTagLabel = StoreTab:CreateLabel("VIP Tag: " .. VIP.Tag)
+
+-- Check VIP Status and Apply Tag
+local function CheckVIPStatus()
+    local player = game.Players.LocalPlayer
+    local success, hasPass = pcall(function()
+        return game:GetService("MarketplaceService"):UserOwnsGamePassAsync(player.UserId, VIP.GamePassId)
+    end)
+    
+    if success and hasPass then
+        VIP.HasVIP = true
+        VIPStatus:Set("Status: 👑 VIP MEMBER (Verified)")
+        ApplyVIPTag()
+        Rayfield:Notify({
+            Title = "🎉 VIP Verified!",
+            Content = "Welcome back, VIP member! 'Scripter VIP' tag applied!",
+            Duration = 8.0,
+            Image = 1234567890,
+        })
+    else
+        VIP.HasVIP = false
+        VIPStatus:Set("Status: 🆓 FREE USER")
+        RemoveVIPTag()
+    end
+end
+
+-- Apply VIP Tag to Player
+function ApplyVIPTag()
+    local player = game.Players.LocalPlayer
+    
+    -- Method 1: Change DisplayName
+    if player then
+        if not _G.OriginalPlayerName then
+            _G.OriginalPlayerName = player.DisplayName
+        end
+        player.DisplayName = _G.OriginalPlayerName .. " [" .. VIP.Tag .. "]"
+    end
+    
+    -- Method 2: Create Leaderstats VIP Tag
+    CreateLeaderstatsVIPTag()
+    
+    -- Method 3: Billboard GUI above player
+    CreateVIPTagBillboard()
+end
+
+function RemoveVIPTag()
+    local player = game.Players.LocalPlayer
+    
+    -- Restore original name
+    if player and _G.OriginalPlayerName then
+        player.DisplayName = _G.OriginalPlayerName
+    end
+    
+    -- Remove leaderstats
+    RemoveLeaderstatsVIPTag()
+    
+    -- Remove billboard
+    RemoveVIPTagBillboard()
+end
+
+-- Leaderstats VIP Tag
+function CreateLeaderstatsVIPTag()
+    local player = game.Players.LocalPlayer
+    if not player then return end
+    
+    if player.Character then
+        AddLeaderstatsToCharacter(player.Character)
+    end
+    
+    player.CharacterAdded:Connect(function(character)
+        AddLeaderstatsToCharacter(character)
+    end)
+end
+
+function AddLeaderstatsToCharacter(character)
+    task.wait(1)
+    
+    local vipFolder = Instance.new("Folder")
+    vipFolder.Name = "VIPTag"
+    vipFolder.Parent = character
+    
+    local vipValue = Instance.new("StringValue")
+    vipValue.Name = "ScripterVIP"
+    vipValue.Value = "⭐ VIP Member ⭐"
+    vipValue.Parent = vipFolder
+end
+
+function RemoveLeaderstatsVIPTag()
+    local player = game.Players.LocalPlayer
+    if player and player.Character then
+        local vipFolder = player.Character:FindFirstChild("VIPTag")
+        if vipFolder then
+            vipFolder:Destroy()
+        end
+    end
+end
+
+-- Billboard VIP Tag
+function CreateVIPTagBillboard()
+    local player = game.Players.LocalPlayer
+    if not player or not player.Character then return end
+    
+    player.CharacterAdded:Connect(function(character)
+        task.wait(1)
+        CreateBillboardOnCharacter(character)
+    end)
+    
+    if player.Character then
+        CreateBillboardOnCharacter(player.Character)
+    end
+end
+
+function CreateBillboardOnCharacter(character)
+    local head = character:WaitForChild("Head", 5)
+    if not head then return end
+    
+    local existingBillboard = head:FindFirstChild("VIPTagBillboard")
+    if existingBillboard then
+        existingBillboard:Destroy()
+    end
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "VIPTagBillboard"
+    billboard.Adornee = head
+    billboard.Size = UDim2.new(0, 200, 0, 50)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.MaxDistance = 100
+    billboard.Parent = head
+    
+    local label = Instance.new("TextLabel")
+    label.Name = "VIPLabel"
+    label.BackgroundTransparency = 1
+    label.Text = "🌟 " .. VIP.Tag .. " 🌟"
+    label.TextColor3 = Color3.fromRGB(255, 215, 0)
+    label.TextStrokeTransparency = 0
+    label.TextSize = 14
+    label.Font = Enum.Font.GothamBold
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.Parent = billboard
+end
+
+function RemoveVIPTagBillboard()
+    local player = game.Players.LocalPlayer
+    if player and player.Character then
+        local head = player.Character:FindFirstChild("Head")
+        if head then
+            local billboard = head:FindFirstChild("VIPTagBillboard")
+            if billboard then
+                billboard:Destroy()
+            end
+        end
+    end
+end
+
+-- Purchase VIP Button
+local BuyVIP = StoreTab:CreateButton({
+    Name = "👑 Purchase VIP GamePass",
+    Callback = function()
+        game:GetService("MarketplaceService"):PromptGamePassPurchase(game.Players.LocalPlayer, VIP.GamePassId)
+        
+        Rayfield:Notify({
+            Title = "👑 VIP Purchase",
+            Content = "After purchase, you'll get the 'Scripter VIP' tag!",
+            Duration = 6.0,
+            Image = 1234567890,
+        })
+    end,
+})
+
+-- Verify VIP Button
+local VerifyVIP = StoreTab:CreateButton({
+    Name = "🔄 Verify VIP & Apply Tag",
+    Callback = function()
+        CheckVIPStatus()
+        Rayfield:Notify({
+            Title = "🔍 Checking VIP Status",
+            Content = "Verifying GamePass and applying VIP tag...",
+            Duration = 3.0,
+            Image = 1234567890,
+        })
+    end,
+})
+
+-- ========== INITIALIZE ==========
+
+-- Set default positions
+WinX:Set("57.25")
+WinY:Set("241.75")
+WinZ:Set("226.75")
+SpawnInput:Set("0,5,0")
+WinsTarget:Set("10")
+DelayInput:Set("1")
+
+-- Initialize settings
+_G.FLYSPEED = 20
+_G.WinNotifications = true
+_G.ProgressInterval = 10
+
+UpdateFarmDisplay()
+
+-- Check VIP status on startup
+task.wait(2)
+CheckVIPStatus()
+
+-- Auto re-apply tag when character respawns
+game.Players.LocalPlayer.CharacterAdded:Connect(function(character)
+    task.wait(2)
+    if VIP.HasVIP then
+        ApplyVIPTag()
     end
 end)
 
--- Initialize
-UpdateWinDisplay()
-
-print("🚀 RusCatScript FAST FARM Loaded!")
-print("🦅 Fly System: Use WASD + Space/Shift to fly")
-print("🕺 Jump Animation: Auto plays when farming")
-print("📱 GUI Controls: Use (-) to hide, (+) to show")
-print("⚡ Fast win detection and flying to targets!")
+Rayfield:Notify({
+    Title = "🧿 RusCatScript Ultimate v9.0",
+    Content = "Complete system loaded! All features available!",
+    Duration = 8.0,
+    Image = 1234567890,
+})
