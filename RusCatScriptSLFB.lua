@@ -1,162 +1,207 @@
 local ScreenGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
-local ScrollingFrame = Instance.new("ScrollingFrame")
-local UIListLayout = Instance.new("UIListLayout")
-local Title = Instance.new("TextLabel")
-local UICorner_Main = Instance.new("UICorner")
+local LeftNav = Instance.new("Frame")
+local PagesContainer = Instance.new("Frame")
+local TopBar = Instance.new("Frame")
+
+-- Состояния
+local lp = game.Players.LocalPlayer
+local godMode, vipUnlock, noclip, autoFarm = false, false, false, false
+local selectedBrainrot = "67"
+local safeZonePos = Vector3.new(18.8, 12.26, -30.8)
+local isMinimized = false
+
+local brainrots = {
+    "Chillin Chilli", "Crazylone Pizaione", "Swag Soda", "Spazio Polare",
+    "Tic Tac Sahur", "Nuclearo Dinossauro", "Lna Spaventosa", "Stopppo Luminino",
+    "Noo My Valentine", "Castino Fortini", "Los Stawberry Elephantitop",
+    "Compactaroni Diskaloni", "67", "Strawberry elephant"
+}
 
 ScreenGui.Parent = game.CoreGui
 ScreenGui.Name = "RusCatScript"
 
--- Главное окно
-MainFrame.Name = "MainFrame"
+-- ГЛАВНОЕ ОКНО
 MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-MainFrame.Position = UDim2.new(0.5, -110, 0.2, 0)
-MainFrame.Size = UDim2.new(0, 220, 0, 380)
+MainFrame.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+MainFrame.Position = UDim2.new(0.5, -200, 0.4, -100)
+MainFrame.Size = UDim2.new(0, 400, 0, 200)
 MainFrame.Active = true
 MainFrame.Draggable = true
+MainFrame.ClipsDescendants = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
-UICorner_Main.CornerRadius = UDim.new(0, 12)
-UICorner_Main.Parent = MainFrame
+-- ВЕРХНЯЯ ПАНЕЛЬ
+TopBar.Parent = MainFrame
+TopBar.Size = UDim2.new(1, 0, 0, 30)
+TopBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 
-Title.Parent = MainFrame
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Text = "RusCatScript" -- Исправленное название
-Title.TextColor3 = Color3.fromRGB(0, 255, 150)
-Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+local Title = Instance.new("TextLabel", TopBar)
+Title.Text = "  RusCatScript"
+Title.TextColor3 = Color3.fromRGB(50, 50, 50)
+Title.Size = UDim2.new(0.6, 0, 1, 0)
+Title.BackgroundTransparency = 1
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 18
+Title.TextXAlignment = Enum.TextXAlignment.Left
 
-ScrollingFrame.Parent = MainFrame
-ScrollingFrame.Size = UDim2.new(1, 0, 1, -50)
-ScrollingFrame.Position = UDim2.new(0, 0, 0, 45)
-ScrollingFrame.BackgroundTransparency = 1
-ScrollingFrame.CanvasSize = UDim2.new(0, 0, 2.5, 0)
-ScrollingFrame.ScrollBarThickness = 2
-
-UIListLayout.Parent = ScrollingFrame
-UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-UIListLayout.Padding = UDim.new(0, 6)
-
--- Переменные состояний
-local lp = game.Players.LocalPlayer
-local godModeActive = false
-local vipUnlockActive = false
-local noclipEnabled = false
-local flyEnabled = false
-local flySpeed = 50
-
--- Функция создания кнопок
-local function createBtn(text, color, callback)
-    local btn = Instance.new("TextButton")
-    btn.Parent = ScrollingFrame
-    btn.Size = UDim2.new(0.9, 0, 0, 35)
-    btn.BackgroundColor3 = color
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.GothamSemibold
-    btn.TextSize = 14
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = btn
-    btn.MouseButton1Click:Connect(function() callback(btn) end)
-    return btn
+local function toggleMin()
+    isMinimized = not isMinimized
+    MainFrame:TweenSize(isMinimized and UDim2.new(0, 400, 0, 30) or UDim2.new(0, 400, 0, 200), "Out", "Back", 0.3, true)
 end
 
---- ЛОГИКА ФУНКЦИЙ ---
+local CloseBtn = Instance.new("TextButton", TopBar)
+CloseBtn.Text = "✕"
+CloseBtn.Position = UDim2.new(0.9, 0, 0, 0)
+CloseBtn.Size = UDim2.new(0.1, 0, 1, 0)
+CloseBtn.TextColor3 = Color3.fromRGB(200, 50, 50)
+CloseBtn.BackgroundTransparency = 1
+CloseBtn.MouseButton1Click:Connect(toggleMin)
+
+-- ЛЕВАЯ НАВИГАЦИЯ
+LeftNav.Parent = MainFrame
+LeftNav.Position = UDim2.new(0, 0, 0, 30)
+LeftNav.Size = UDim2.new(0, 100, 1, -30)
+LeftNav.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+Instance.new("UIListLayout", LeftNav)
+
+-- КОНТЕЙНЕР СТРАНИЦ
+PagesContainer.Parent = MainFrame
+PagesContainer.Position = UDim2.new(0, 105, 0, 35)
+PagesContainer.Size = UDim2.new(1, -110, 1, -40)
+PagesContainer.BackgroundTransparency = 1
+
+local pages = {}
+local function createPage(name)
+    local pg = Instance.new("ScrollingFrame", PagesContainer)
+    pg.Size = UDim2.new(1, 0, 1, 0)
+    pg.BackgroundTransparency = 1
+    pg.CanvasSize = UDim2.new(0, 0, 0, 0)
+    pg.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    pg.ScrollBarThickness = 3
+    pg.Visible = false
+    Instance.new("UIListLayout", pg).Padding = UDim.new(0, 5)
+    pages[name] = pg
+    
+    local btn = Instance.new("TextButton", LeftNav)
+    btn.Size = UDim2.new(1, 0, 0, 35)
+    btn.Text = name:upper()
+    btn.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+    btn.TextColor3 = Color3.fromRGB(80, 80, 80)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 10
+    btn.BorderSizePixel = 0
+    btn.MouseButton1Click:Connect(function()
+        for _, p in pairs(pages) do p.Visible = false end
+        pg.Visible = true
+    end)
+    return pg
+end
+
+local mainPage = createPage("Main")
+local farmPage = createPage("Farm")
+local playerPage = createPage("Player")
+local guiPage = createPage("GUI")
+mainPage.Visible = true
+
+local function addBtn(text, page, color, callback)
+    local b = Instance.new("TextButton", page)
+    b.Size = UDim2.new(0.9, 0, 0, 32)
+    b.BackgroundColor3 = color
+    b.Text = text
+    b.TextColor3 = Color3.fromRGB(255, 255, 255)
+    b.Font = Enum.Font.GothamSemibold
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+    b.MouseButton1Click:Connect(function() callback(b) end)
+end
+
+--- ВКЛАДКА MAIN ---
+addBtn("GodMode (Lava): OFF", mainPage, Color3.fromRGB(220, 80, 80), function(b)
+    godMode = not godMode
+    b.Text = godMode and "GOD: ON" or "GOD: OFF"
+    b.BackgroundColor3 = godMode and Color3.fromRGB(100, 200, 100) or Color3.fromRGB(220, 80, 80)
+end)
+
+addBtn("Unlock VIP: OFF", mainPage, Color3.fromRGB(140, 100, 200), function(b)
+    vipUnlock = not vipUnlock
+    b.Text = vipUnlock and "VIP: ON" or "VIP: OFF"
+    b.BackgroundColor3 = vipUnlock and Color3.fromRGB(100, 200, 100) or Color3.fromRGB(140, 100, 200)
+end)
+
+--- ВКЛАДКА FARM ---
+local status = Instance.new("TextLabel", farmPage)
+status.Size = UDim2.new(1, 0, 0, 25)
+status.Text = "Target: " .. selectedBrainrot
+status.TextColor3 = Color3.fromRGB(50, 50, 50)
+status.BackgroundTransparency = 1
+
+addBtn("START AUTO FARM", farmPage, Color3.fromRGB(80, 180, 80), function(b)
+    autoFarm = not autoFarm
+    b.Text = autoFarm and "STOP FARM" or "START FARM"
+    b.BackgroundColor3 = autoFarm and Color3.fromRGB(200, 80, 80) or Color3.fromRGB(80, 180, 80)
+end)
+
+for _, name in pairs(brainrots) do
+    addBtn(name, farmPage, Color3.fromRGB(200, 200, 200), function()
+        selectedBrainrot = name
+        status.Text = "Target: " .. name
+    end)
+end
+
+--- ВКЛАДКА PLAYER (Player Settings) ---
+addBtn("Speed (80)", playerPage, Color3.fromRGB(100, 100, 100), function() lp.Character.Humanoid.WalkSpeed = 80 end)
+addBtn("Jump (120)", playerPage, Color3.fromRGB(100, 100, 100), function() lp.Character.Humanoid.JumpPower = 120 end)
+addBtn("Noclip: OFF", playerPage, Color3.fromRGB(100, 100, 100), function(b)
+    noclip = not noclip
+    b.Text = noclip and "Noclip: ON" or "Noclip: OFF"
+end)
+
+--- ВКЛАДКА GUI (GUI Settings) ---
+addBtn("Dark Theme", guiPage, Color3.fromRGB(40, 40, 40), function()
+    MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    TopBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    LeftNav.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    status.TextColor3 = Color3.fromRGB(255, 255, 255)
+end)
+
+addBtn("White Theme", guiPage, Color3.fromRGB(240, 240, 240), function()
+    MainFrame.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+    TopBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    LeftNav.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+    Title.TextColor3 = Color3.fromRGB(50, 50, 50)
+    status.TextColor3 = Color3.fromRGB(50, 50, 50)
+    -- Чтобы текст на белой кнопке был виден
+    for _, b in pairs(guiPage:GetChildren()) do if b:IsA("TextButton") and b.Text == "White Theme" then b.TextColor3 = Color3.fromRGB(50, 50, 50) end end
+end)
+
+-- ЛОГИКА
+task.spawn(function()
+    while task.wait(0.1) do
+        if autoFarm then
+            pcall(function()
+                local targetObj = workspace.GameFolder.Brainrots.Celestial:FindFirstChild(selectedBrainrot)
+                if targetObj then
+                    lp.Character.HumanoidRootPart.CFrame = targetObj.RootPart.CFrame
+                    task.wait(0.3)
+                    game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                    task.wait(4.5)
+                    game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                    lp.Character.HumanoidRootPart.CFrame = CFrame.new(safeZonePos)
+                    task.wait(1)
+                end
+            end)
+        end
+    end
+end)
 
 game:GetService("RunService").Stepped:Connect(function()
-    -- GodMode (Удаление лавы)
-    if godModeActive then
-        for _, obj in pairs(game.Workspace:GetDescendants()) do
-            if obj.Name == "Lava" then obj:Destroy() end
+    if godMode then for _, v in pairs(workspace:GetDescendants()) do if v.Name == "Lava" then v:Destroy() end end end
+    if vipUnlock then
+        for _, d in pairs(workspace:GetDescendants()) do
+            if d.Name == "VIPDoor" and d:IsA("BasePart") then d.CanCollide = false d.Transparency = 0.5 end
         end
     end
-    -- Unlock VIPDoor
-    if vipUnlockActive then
-        for _, door in pairs(game.Workspace:GetDescendants()) do
-            if door.Name == "VIPDoor" and door:IsA("BasePart") then
-                door.CanCollide = false
-                door.Transparency = 0.5
-            end
-        end
-    end
-    -- Noclip
-    if noclipEnabled and lp.Character then
-        for _, part in pairs(lp.Character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
-    end
-end)
-
---- КНОПКИ МЕНЮ ---
-
-createBtn("GodMode: OFF", Color3.fromRGB(100, 0, 0), function(btn)
-    godModeActive = not godModeActive
-    btn.Text = godModeActive and "GodMode: ON" or "GodMode: OFF"
-    btn.BackgroundColor3 = godModeActive and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(100, 0, 0)
-end)
-
-createBtn("Unlock VIPDoor: OFF", Color3.fromRGB(70, 0, 130), function(btn)
-    vipUnlockActive = not vipUnlockActive
-    btn.Text = vipUnlockActive and "Unlock VIPDoor: ON" or "Unlock VIPDoor: OFF"
-    btn.BackgroundColor3 = vipUnlockActive and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(70, 0, 130)
-end)
-
-createBtn("Invisible", Color3.fromRGB(80, 80, 80), function()
-    if lp.Character then
-        for _, v in pairs(lp.Character:GetDescendants()) do
-            if v:IsA("BasePart") or v:IsA("Decal") then v.Transparency = 1 end
-        end
-    end
-end)
-
-createBtn("Noclip: OFF", Color3.fromRGB(40, 40, 40), function(btn)
-    noclipEnabled = not noclipEnabled
-    btn.Text = noclipEnabled and "Noclip: ON" or "Noclip: OFF"
-    btn.BackgroundColor3 = noclipEnabled and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(40, 40, 40)
-end)
-
-createBtn("Fly: OFF", Color3.fromRGB(0, 100, 150), function(btn)
-    flyEnabled = not flyEnabled
-    btn.Text = flyEnabled and "Fly: ON" or "Fly: OFF"
-    btn.BackgroundColor3 = flyEnabled and Color3.fromRGB(0, 200, 255) or Color3.fromRGB(0, 100, 150)
-end)
-
-createBtn("Speed: 80", Color3.fromRGB(50, 150, 0), function()
-    lp.Character.Humanoid.WalkSpeed = 80
-end)
-
-createBtn("Jump: 120", Color3.fromRGB(0, 150, 120), function()
-    lp.Character.Humanoid.JumpPower = 120
-end)
-
-createBtn("Low Gravity", Color3.fromRGB(150, 150, 0), function()
-    game.Workspace.Gravity = 45
-end)
-
-createBtn("Reset Physics", Color3.fromRGB(200, 80, 0), function()
-    lp.Character.Humanoid.WalkSpeed = 16
-    lp.Character.Humanoid.JumpPower = 50
-    game.Workspace.Gravity = 196.2
-    noclipEnabled = false
-end)
-
-createBtn("Close RusCatScript", Color3.fromRGB(30, 30, 30), function()
-    ScreenGui:Destroy()
-end)
-
--- Логика полета
-task.spawn(function()
-    local bv = Instance.new("BodyVelocity")
-    bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-    while task.wait() do
-        if flyEnabled and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-            bv.Parent = lp.Character.HumanoidRootPart
-            bv.Velocity = lp.Character.Humanoid.MoveDirection * flySpeed + Vector3.new(0, 2, 0)
-        else
-            bv.Parent = nil
-        end
+    if noclip and lp.Character then
+        for _, p in pairs(lp.Character:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end
     end
 end)
