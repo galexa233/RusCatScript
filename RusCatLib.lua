@@ -1,53 +1,69 @@
 --[[
     RusCatScript Library
-    Версия: 1.0
-    Размер GUI: 400x200
+    Версия: 2.0
+    Стиль: Rayfield
+    Категории: Player, Main, Game, Fun
 ]]
 
 local RusCatScript = {}
 
--- Основные цвета
+-- Основные цвета в стиле Rayfield
 local theme = {
-    Background = Color3.fromRGB(25, 25, 25),
-    Topbar = Color3.fromRGB(35, 35, 35),
-    ButtonHover = Color3.fromRGB(45, 45, 45),
+    Background = Color3.fromRGB(20, 20, 20),
+    Topbar = Color3.fromRGB(30, 30, 30),
+    CategoryBar = Color3.fromRGB(25, 25, 25),
+    ElementBg = Color3.fromRGB(35, 35, 35),
+    ElementHover = Color3.fromRGB(45, 45, 45),
+    Accent = Color3.fromRGB(0, 160, 255),
     Text = Color3.fromRGB(255, 255, 255),
+    TextSecondary = Color3.fromRGB(160, 160, 160),
     CloseButton = Color3.fromRGB(255, 70, 70),
     MinimizeButton = Color3.fromRGB(255, 200, 70),
-    PinButton = Color3.fromRGB(70, 200, 255)
+    PinButton = Color3.fromRGB(70, 200, 255),
+    ProgressBg = Color3.fromRGB(45, 45, 45),
+    ProgressFill = Color3.fromRGB(0, 160, 255)
 }
 
 -- Функция создания главного окна
 function RusCatScript:CreateWindow(title)
-    -- Проверяем, есть ли уже ScreenGui
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "RusCatScript_GUI"
     screenGui.Parent = game.CoreGui
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
-    -- Создаем главный фрейм
+    -- Главный фрейм с закругленными углами
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainWindow"
-    mainFrame.Size = UDim2.new(0, 400, 0, 200)
-    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -100)
+    mainFrame.Size = UDim2.new(0, 500, 0, 350)
+    mainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
     mainFrame.BackgroundColor3 = theme.Background
     mainFrame.BorderSizePixel = 0
+    mainFrame.ClipsDescendants = true
     mainFrame.Active = true
-    mainFrame.Draggable = false -- Будем делать свою draggable систему
     mainFrame.Parent = screenGui
     
-    -- Верхняя панель для перетаскивания
+    -- Закругленные углы (для поддержки старых версий Roblox)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = mainFrame
+    
+    -- Верхняя панель для drag
     local topbar = Instance.new("Frame")
     topbar.Name = "Topbar"
-    topbar.Size = UDim2.new(1, 0, 0, 30)
+    topbar.Size = UDim2.new(1, 0, 0, 40)
     topbar.BackgroundColor3 = theme.Topbar
     topbar.BorderSizePixel = 0
     topbar.Parent = mainFrame
     
-    -- Название окна
+    local topbarCorner = Instance.new("UICorner")
+    topbarCorner.CornerRadius = UDim.new(0, 8)
+    topbarCorner.Parent = topbar
+    
+    -- Название
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(1, -90, 1, 0)
-    titleLabel.Position = UDim2.new(0, 10, 0, 0)
+    titleLabel.Size = UDim2.new(1, -120, 1, 0)
+    titleLabel.Position = UDim2.new(0, 15, 0, 0)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = title or "RusCatScript"
     titleLabel.TextColor3 = theme.Text
@@ -56,11 +72,11 @@ function RusCatScript:CreateWindow(title)
     titleLabel.TextSize = 16
     titleLabel.Parent = topbar
     
-    -- Кнопка закрытия (X)
+    -- Кнопки управления
     local closeButton = Instance.new("TextButton")
     closeButton.Name = "CloseButton"
     closeButton.Size = UDim2.new(0, 30, 0, 30)
-    closeButton.Position = UDim2.new(1, -90, 0, 0)
+    closeButton.Position = UDim2.new(1, -105, 0.5, -15)
     closeButton.BackgroundColor3 = theme.CloseButton
     closeButton.Text = "X"
     closeButton.TextColor3 = theme.Text
@@ -69,11 +85,10 @@ function RusCatScript:CreateWindow(title)
     closeButton.BorderSizePixel = 0
     closeButton.Parent = topbar
     
-    -- Кнопка свернуть (-)
     local minimizeButton = Instance.new("TextButton")
     minimizeButton.Name = "MinimizeButton"
     minimizeButton.Size = UDim2.new(0, 30, 0, 30)
-    minimizeButton.Position = UDim2.new(1, -60, 0, 0)
+    minimizeButton.Position = UDim2.new(1, -70, 0.5, -15)
     minimizeButton.BackgroundColor3 = theme.MinimizeButton
     minimizeButton.Text = "-"
     minimizeButton.TextColor3 = theme.Text
@@ -82,11 +97,10 @@ function RusCatScript:CreateWindow(title)
     minimizeButton.BorderSizePixel = 0
     minimizeButton.Parent = topbar
     
-    -- Кнопка закрепить (Pin)
     local pinButton = Instance.new("TextButton")
     pinButton.Name = "PinButton"
     pinButton.Size = UDim2.new(0, 30, 0, 30)
-    pinButton.Position = UDim2.new(1, -30, 0, 0)
+    pinButton.Position = UDim2.new(1, -35, 0.5, -15)
     pinButton.BackgroundColor3 = theme.PinButton
     pinButton.Text = "📌"
     pinButton.TextColor3 = theme.Text
@@ -95,21 +109,119 @@ function RusCatScript:CreateWindow(title)
     pinButton.BorderSizePixel = 0
     pinButton.Parent = topbar
     
-    -- Контейнер для элементов
-    local container = Instance.new("Frame")
-    container.Name = "Container"
-    container.Size = UDim2.new(1, -20, 1, -40)
-    container.Position = UDim2.new(0, 10, 0, 35)
-    container.BackgroundTransparency = 1
-    container.Parent = mainFrame
+    -- Панель категорий
+    local categoryBar = Instance.new("Frame")
+    categoryBar.Name = "CategoryBar"
+    categoryBar.Size = UDim2.new(1, 0, 0, 50)
+    categoryBar.Position = UDim2.new(0, 0, 0, 40)
+    categoryBar.BackgroundColor3 = theme.CategoryBar
+    categoryBar.BorderSizePixel = 0
+    categoryBar.Parent = mainFrame
     
-    -- Переменные состояния
-    local minimized = false
-    local pinned = false
-    local normalSize = UDim2.new(0, 400, 0, 200)
-    local minimizedSize = UDim2.new(0, 400, 0, 30)
+    local categoryList = Instance.new("Frame")
+    categoryList.Name = "CategoryList"
+    categoryList.Size = UDim2.new(1, -20, 1, -10)
+    categoryList.Position = UDim2.new(0, 10, 0, 5)
+    categoryList.BackgroundTransparency = 1
+    categoryList.Parent = categoryBar
     
-    -- Функционал перетаскивания
+    -- Контейнер для контента
+    local contentContainer = Instance.new("Frame")
+    contentContainer.Name = "ContentContainer"
+    contentContainer.Size = UDim2.new(1, -20, 1, -100)
+    contentContainer.Position = UDim2.new(0, 10, 0, 95)
+    contentContainer.BackgroundTransparency = 1
+    contentContainer.Parent = mainFrame
+    
+    -- Контейнеры для каждой категории
+    local categoryFrames = {}
+    local categories = {"Main", "Player", "Game", "Fun"}
+    
+    local function createCategoryFrame(catName)
+        local frame = Instance.new("ScrollingFrame")
+        frame.Name = catName .. "Page"
+        frame.Size = UDim2.new(1, 0, 1, 0)
+        frame.BackgroundTransparency = 1
+        frame.BorderSizePixel = 0
+        frame.ScrollBarThickness = 6
+        frame.ScrollBarImageColor3 = theme.Accent
+        frame.CanvasSize = UDim2.new(0, 0, 0, 0)
+        frame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        frame.Visible = false
+        frame.Parent = contentContainer
+        
+        local listLayout = Instance.new("UIListLayout")
+        listLayout.Padding = UDim.new(0, 8)
+        listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        listLayout.Parent = frame
+        
+        local padding = Instance.new("UIPadding")
+        padding.PaddingTop = UDim.new(0, 5)
+        padding.PaddingBottom = UDim.new(0, 5)
+        padding.PaddingLeft = UDim.new(0, 5)
+        padding.PaddingRight = UDim.new(0, 5)
+        padding.Parent = frame
+        
+        return frame
+    end
+    
+    for _, cat in ipairs(categories) do
+        categoryFrames[cat] = createCategoryFrame(cat)
+    end
+    
+    -- Создание кнопок категорий
+    local categoryButtons = {}
+    local function createCategoryButton(name, pos)
+        local btn = Instance.new("TextButton")
+        btn.Name = name .. "Button"
+        btn.Size = UDim2.new(0, 100, 1, 0)
+        btn.Position = UDim2.new(0, (pos-1) * 110, 0, 0)
+        btn.BackgroundTransparency = 1
+        btn.Text = name
+        btn.TextColor3 = theme.TextSecondary
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 14
+        btn.Parent = categoryList
+        
+        local line = Instance.new("Frame")
+        line.Name = "Underline"
+        line.Size = UDim2.new(1, 0, 0, 2)
+        line.Position = UDim2.new(0, 0, 1, -2)
+        line.BackgroundColor3 = theme.Accent
+        line.BackgroundTransparency = 1
+        line.Parent = btn
+        
+        btn.MouseButton1Click:Connect(function()
+            for _, otherBtn in pairs(categoryButtons) do
+                otherBtn.TextColor3 = theme.TextSecondary
+                otherBtn.Underline.BackgroundTransparency = 1
+            end
+            for _, frame in pairs(categoryFrames) do
+                frame.Visible = false
+            end
+            
+            btn.TextColor3 = theme.Accent
+            btn.Underline.BackgroundTransparency = 0
+            categoryFrames[name].Visible = true
+        end)
+        
+        table.insert(categoryButtons, btn)
+        return btn
+    end
+    
+    for i, cat in ipairs(categories) do
+        createCategoryButton(cat, i)
+    end
+    
+    -- Показываем первую категорию
+    if categoryButtons[1] then
+        categoryButtons[1].TextColor3 = theme.Accent
+        categoryButtons[1].Underline.BackgroundTransparency = 0
+        categoryFrames[categories[1]].Visible = true
+    end
+    
+    -- Drag система
     local dragging = false
     local dragInput
     local dragStart
@@ -147,35 +259,38 @@ function RusCatScript:CreateWindow(title)
         end
     end)
     
-    -- Функционал кнопки закрытия
+    -- Функции кнопок
     closeButton.MouseButton1Click:Connect(function()
         screenGui:Destroy()
     end)
     
-    -- Функционал кнопки свернуть
+    local minimized = false
     minimizeButton.MouseButton1Click:Connect(function()
         minimized = not minimized
         if minimized then
-            mainFrame.Size = minimizedSize
-            container.Visible = false
+            mainFrame.Size = UDim2.new(0, 500, 0, 40)
+            categoryBar.Visible = false
+            contentContainer.Visible = false
             minimizeButton.Text = "□"
         else
-            mainFrame.Size = normalSize
-            container.Visible = true
+            mainFrame.Size = UDim2.new(0, 500, 0, 350)
+            categoryBar.Visible = true
+            contentContainer.Visible = true
             minimizeButton.Text = "-"
         end
     end)
     
-    -- Функционал кнопки закрепить
+    local pinned = false
     pinButton.MouseButton1Click:Connect(function()
         pinned = not pinned
         if pinned then
             pinButton.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
             pinButton.Text = "📍"
-            -- Здесь можно добавить логику закрепления поверх других окон
+            mainFrame.ZIndex = 10
         else
             pinButton.BackgroundColor3 = theme.PinButton
             pinButton.Text = "📌"
+            mainFrame.ZIndex = 1
         end
     end)
     
@@ -193,25 +308,88 @@ function RusCatScript:CreateWindow(title)
     setupHover(minimizeButton, theme.MinimizeButton, Color3.fromRGB(255, 220, 100))
     setupHover(pinButton, theme.PinButton, Color3.fromRGB(100, 220, 255))
     
-    -- Возвращаем объекты для дальнейшего использования
+    -- Возвращаем API
     return {
         ScreenGui = screenGui,
         MainFrame = mainFrame,
-        Container = container,
+        CategoryFrames = categoryFrames,
         
-        -- Метод для создания кнопки
-        CreateButton = function(self, config)
+        -- Создание секции
+        CreateSection = function(self, category, name)
+            local frame = categoryFrames[category]
+            if not frame then return end
+            
+            local section = Instance.new("Frame")
+            section.Name = name .. "Section"
+            section.Size = UDim2.new(1, -10, 0, 30)
+            section.BackgroundTransparency = 1
+            section.Parent = frame
+            
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, -10, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Text = name
+            label.TextColor3 = theme.Accent
+            label.Font = Enum.Font.GothamBold
+            label.TextSize = 14
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Parent = section
+            
+            local line = Instance.new("Frame")
+            line.Size = UDim2.new(1, 0, 0, 1)
+            line.Position = UDim2.new(0, 0, 1, -1)
+            line.BackgroundColor3 = theme.Accent
+            line.BackgroundTransparency = 0.5
+            line.Parent = section
+            
+            return section
+        end,
+        
+        -- Кнопка
+        CreateButton = function(self, category, config)
+            local frame = categoryFrames[category]
+            if not frame then return end
+            
             local button = Instance.new("TextButton")
             button.Name = config.Name or "Button"
-            button.Size = UDim2.new(1, 0, 0, 35)
-            button.Position = UDim2.new(0, 0, 0, (#container:GetChildren() - 1) * 40)
-            button.BackgroundColor3 = theme.Topbar
-            button.Text = config.Text or "Button"
-            button.TextColor3 = theme.Text
-            button.Font = Enum.Font.Gotham
-            button.TextSize = 14
+            button.Size = UDim2.new(1, -10, 0, 40)
+            button.BackgroundColor3 = theme.ElementBg
+            button.Text = ""
             button.BorderSizePixel = 0
-            button.Parent = container
+            button.AutoButtonColor = false
+            button.Parent = frame
+            
+            local btnCorner = Instance.new("UICorner")
+            btnCorner.CornerRadius = UDim.new(0, 6)
+            btnCorner.Parent = button
+            
+            local title = Instance.new("TextLabel")
+            title.Size = UDim2.new(1, -50, 1, 0)
+            title.Position = UDim2.new(0, 15, 0, 0)
+            title.BackgroundTransparency = 1
+            title.Text = config.Text or "Button"
+            title.TextColor3 = theme.Text
+            title.Font = Enum.Font.Gotham
+            title.TextSize = 14
+            title.TextXAlignment = Enum.TextXAlignment.Left
+            title.Parent = button
+            
+            local arrow = Instance.new("TextLabel")
+            arrow.Size = UDim2.new(0, 30, 1, 0)
+            arrow.Position = UDim2.new(1, -35, 0, 0)
+            arrow.BackgroundTransparency = 1
+            arrow.Text = "→"
+            arrow.TextColor3 = theme.TextSecondary
+            arrow.Font = Enum.Font.Gotham
+            arrow.TextSize = 18
+            arrow.Parent = button
+            
+            button.MouseEnter:Connect(function()
+                button.BackgroundColor3 = theme.ElementHover
+            end)
+            button.MouseLeave:Connect(function()
+                button.BackgroundColor3 = theme.ElementBg
+            end)
             
             if config.Callback then
                 button.MouseButton1Click:Connect(config.Callback)
@@ -220,22 +398,148 @@ function RusCatScript:CreateWindow(title)
             return button
         end,
         
-        -- Метод для создания текстового поля
-        CreateLabel = function(self, config)
-            local label = Instance.new("TextLabel")
-            label.Name = config.Name or "Label"
-            label.Size = UDim2.new(1, 0, 0, 30)
-            label.Position = UDim2.new(0, 0, 0, (#container:GetChildren() - 1) * 35)
-            label.BackgroundTransparency = 1
-            label.Text = config.Text or "Label"
-            label.TextColor3 = theme.Text
-            label.Font = Enum.Font.Gotham
-            label.TextSize = 14
-            label.Parent = container
+        -- Прогресс бар
+        CreateProgress = function(self, category, config)
+            local frame = categoryFrames[category]
+            if not frame then return end
             
-            return label
-        end
-    }
-end
-
-return RusCatScript
+            local progressFrame = Instance.new("Frame")
+            progressFrame.Name = config.Name or "Progress"
+            progressFrame.Size = UDim2.new(1, -10, 0, 50)
+            progressFrame.BackgroundColor3 = theme.ElementBg
+            progressFrame.BorderSizePixel = 0
+            progressFrame.Parent = frame
+            
+            local progCorner = Instance.new("UICorner")
+            progCorner.CornerRadius = UDim.new(0, 6)
+            progCorner.Parent = progressFrame
+            
+            local title = Instance.new("TextLabel")
+            title.Size = UDim2.new(1, -20, 0, 20)
+            title.Position = UDim2.new(0, 10, 0, 5)
+            title.BackgroundTransparency = 1
+            title.Text = config.Text or "Progress"
+            title.TextColor3 = theme.Text
+            title.Font = Enum.Font.Gotham
+            title.TextSize = 14
+            title.TextXAlignment = Enum.TextXAlignment.Left
+            title.Parent = progressFrame
+            
+            local percentLabel = Instance.new("TextLabel")
+            percentLabel.Size = UDim2.new(0, 50, 0, 20)
+            percentLabel.Position = UDim2.new(1, -60, 0, 5)
+            percentLabel.BackgroundTransparency = 1
+            percentLabel.Text = "0%"
+            percentLabel.TextColor3 = theme.Accent
+            percentLabel.Font = Enum.Font.GothamBold
+            percentLabel.TextSize = 14
+            percentLabel.Parent = progressFrame
+            
+            local barBg = Instance.new("Frame")
+            barBg.Size = UDim2.new(1, -20, 0, 10)
+            barBg.Position = UDim2.new(0, 10, 0, 30)
+            barBg.BackgroundColor3 = theme.ProgressBg
+            barBg.BorderSizePixel = 0
+            barBg.Parent = progressFrame
+            
+            local barCorner = Instance.new("UICorner")
+            barCorner.CornerRadius = UDim.new(0, 4)
+            barCorner.Parent = barBg
+            
+            local barFill = Instance.new("Frame")
+            barFill.Size = UDim2.new(config.Value or 0, 0, 1, 0)
+            barFill.BackgroundColor3 = theme.ProgressFill
+            barFill.BorderSizePixel = 0
+            barFill.Parent = barBg
+            
+            local fillCorner = Instance.new("UICorner")
+            fillCorner.CornerRadius = UDim.new(0, 4)
+            fillCorner.Parent = barFill
+            
+            return {
+                SetValue = function(val)
+                    val = math.clamp(val, 0, 1)
+                    barFill.Size = UDim2.new(val, 0, 1, 0)
+                    percentLabel.Text = math.floor(val * 100) .. "%"
+                end
+            }
+        end,
+        
+        -- Тоггл (переключатель)
+        CreateToggle = function(self, category, config)
+            local frame = categoryFrames[category]
+            if not frame then return end
+            
+            local toggleFrame = Instance.new("Frame")
+            toggleFrame.Name = config.Name or "Toggle"
+            toggleFrame.Size = UDim2.new(1, -10, 0, 40)
+            toggleFrame.BackgroundColor3 = theme.ElementBg
+            toggleFrame.BorderSizePixel = 0
+            toggleFrame.Parent = frame
+            
+            local togCorner = Instance.new("UICorner")
+            togCorner.CornerRadius = UDim.new(0, 6)
+            togCorner.Parent = toggleFrame
+            
+            local title = Instance.new("TextLabel")
+            title.Size = UDim2.new(1, -60, 1, 0)
+            title.Position = UDim2.new(0, 15, 0, 0)
+            title.BackgroundTransparency = 1
+            title.Text = config.Text or "Toggle"
+            title.TextColor3 = theme.Text
+            title.Font = Enum.Font.Gotham
+            title.TextSize = 14
+            title.TextXAlignment = Enum.TextXAlignment.Left
+            title.Parent = toggleFrame
+            
+            local toggleBtn = Instance.new("TextButton")
+            toggleBtn.Size = UDim2.new(0, 40, 0, 20)
+            toggleBtn.Position = UDim2.new(1, -55, 0.5, -10)
+            toggleBtn.BackgroundColor3 = theme.ProgressBg
+            toggleBtn.Text = ""
+            toggleBtn.BorderSizePixel = 0
+            toggleBtn.Parent = toggleFrame
+            
+            local btnCorner = Instance.new("UICorner")
+            btnCorner.CornerRadius = UDim.new(1, 0)
+            btnCorner.Parent = toggleBtn
+            
+            local circle = Instance.new("Frame")
+            circle.Size = UDim2.new(0, 16, 0, 16)
+            circle.Position = UDim2.new(0, 2, 0.5, -8)
+            circle.BackgroundColor3 = theme.Text
+            circle.BorderSizePixel = 0
+            circle.Parent = toggleBtn
+            
+            local circleCorner = Instance.new("UICorner")
+            circleCorner.CornerRadius = UDim.new(1, 0)
+            circleCorner.Parent = circle
+            
+            local toggled = config.Default or false
+            local function updateToggle()
+                if toggled then
+                    toggleBtn.BackgroundColor3 = theme.Accent
+                    circle.Position = UDim2.new(0, 22, 0.5, -8)
+                else
+                    toggleBtn.BackgroundColor3 = theme.ProgressBg
+                    circle.Position = UDim2.new(0, 2, 0.5, -8)
+                end
+            end
+            updateToggle()
+            
+            toggleBtn.MouseButton1Click:Connect(function()
+                toggled = not toggled
+                updateToggle()
+                if config.Callback then
+                    config.Callback(toggled)
+                end
+            end)
+            
+            return {
+                SetValue = function(val)
+                    toggled = val
+                    updateToggle()
+                end,
+                GetValue = function()
+                    return toggled
+            
